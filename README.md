@@ -1,4 +1,4 @@
-ygfs_code
+swfDiffTool
 ==========
 
-整理ygfs代码与资源素材
+比较两个swf的里面导出类变更情况
