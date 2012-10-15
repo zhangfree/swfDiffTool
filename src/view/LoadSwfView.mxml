@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="500" height="570" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.charts.AreaChart;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Button;
+			import mx.controls.DataGrid;
+			import mx.controls.Label;
+			import mx.controls.List;
+			import mx.events.ListEvent;
+			private var _txtFilePath:Label;
+			private var _btnChoooseSwf:Button;
+			private const _filter:FileFilter = new FileFilter("选择SWF文件","*.swf;*.SWF");
+			private var _file:File;
+			private var _list:List;
+			private var _classNameArray:Array;
+			public var type:int;
+			private function init():void
+			{
+				_txtFilePath = new Label();
+				_txtFilePath.width = 350;
+				_txtFilePath.x = 0;
+				_txtFilePath.y = 10;
+				_txtFilePath.text = "文件路径："
+				
+				_btnChoooseSwf = new Button();
+				_btnChoooseSwf.label = "选择swf文件";
+				_btnChoooseSwf.width = 90;
+				_btnChoooseSwf.x = _txtFilePath.x+_txtFilePath.width+5;
+				_btnChoooseSwf.y = _txtFilePath.y;
+				
+				_file = new File();
+				
+				_list = new List();
+				_list.x = 249;
+				_list.y = 35;
+				_list.width = 200;
+				_list.height = 530;
+				
+				_classNameArray = new Array();
+				
+				addChild(_txtFilePath);
+				addChild(_btnChoooseSwf);
+				addChild(_list);
+				
+				_btnChoooseSwf.addEventListener(MouseEvent.CLICK, chooseSwfFileHandler);
+				_file.addEventListener(Event.SELECT, selectFileHandler);
+				_list.addEventListener(ListEvent.ITEM_CLICK, itemClickHandler);
+			}
+			
+			private function chooseSwfFileHandler(event:MouseEvent):void
+			{
+				_file.browseForOpen("选择swf文件", [_filter]);
+			}
+			
+			private function selectFileHandler(event:Event):void
+			{
+				_txtFilePath.text = "文件路径："+File(event.target).nativePath;
+				var loader:Loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loadCompleteHandler);
+				loader.load(new URLRequest(File(event.target).url));
+			}
+			
+			private function loadCompleteHandler(event:Event):void
+			{
+				LoaderInfo(event.target).removeEventListener(Event.COMPLETE, loadCompleteHandler);
+				var bytes:ByteArray = LoaderInfo(event.target).bytes;
+				bytes.endian = Endian.LITTLE_ENDIAN;
+				bytes.position=Math.ceil(((bytes[8]>>1)+5)/8)+12;
+				_classNameArray = [];
+				while(bytes.bytesAvailable>2)//字节数组剩余可读数据长度大于2个字节
+				{
+					var head:int = bytes.readUnsignedShort();//读取tag类型
+					var size:int = head&63;//判断低6位的值是否是63，如果是，这个tag的长度就是下面的32位整数，否则就是head的低6位
+					if (size == 63)size=bytes.readInt();
+					if (head>>6 != 76)bytes.position += size;//head>>6就是取head高10位的意思，76是tag的类型
+					else 
+					{
+						var NumSymbols:int = bytes.readShort();//导出类的个数
+						for(var i:int=0; i<NumSymbols; i++)
+						{
+							bytes.readShort();//读取tag ID
+							size = bytes.position;
+							while(bytes.readByte() != 0);//每个tag ID前后都有一个空白字节
+							size = bytes.position - (bytes.position=size);
+							var name:String = bytes.readUTFBytes(size).toString();
+							_classNameArray.push(name);
+						}
+					}
+				}
+				setListPosition(type);
+				addData2List();				
+			}
+			
+			private function addData2List():void
+			{
+				var arrayCo:ArrayCollection = new ArrayCollection();
+				_classNameArray.sort();
+				for(var i:int=0; i<_classNameArray.length; i++)
+				{
+					arrayCo.addItem(_classNameArray[i]);
+				}
+				_list.dataProvider = arrayCo;
+			}
+			
+			private function setListPosition(type:int):void
+			{
+				if(type == 0)
+				{
+					_list.x = 249;
+				}
+				else if(type == 1)
+				{
+					_list.x = 3;
+				}
+			}
+			
+			public function showDiff(anotherClassArray:Array):void
+			{
+				var i:int;
+				var j:int;
+				var arrayCo:ArrayCollection = new ArrayCollection();
+				var className:String = "";
+				for(i=0; i<_classNameArray.length; i++)
+				{
+					className = _classNameArray[i];
+					if(anotherClassArray.indexOf(className) < 0)
+					{
+						arrayCo.addItem(className)
+					}
+				}
+				_list.dataProvider = arrayCo;
+			}
+			
+			public function showAllClass():void
+			{
+				var arrayCo:ArrayCollection = new ArrayCollection();
+				_classNameArray.sort();
+				for(var i:int=0; i<_classNameArray.length; i++)
+				{
+					arrayCo.addItem(_classNameArray[i]);
+				}
+				_list.dataProvider = arrayCo;
+			}
+			
+			public function get classNameArray():Array
+			{
+				return _classNameArray;
+			}
+			
+			private function itemClickHandler(event:ListEvent):void
+			{
+				var name:String = event.itemRenderer.data.toString();
+				System.setClipboard(name);
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

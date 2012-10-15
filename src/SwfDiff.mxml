@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="1120" height="600" creationComplete="init()" xmlns:ns1="view.*">
+	<mx:Script>
+		<![CDATA[
+			import view.LoadSwfView;
+			import mx.core.UIComponent;
+			import mx.controls.Button;
+			import view.LoadSwfView;
+			private var _leftSwfFile:LoadSwfView;
+			private var _rightSwfFile:LoadSwfView;
+			private function init():void
+			{
+				_leftSwfFile = new LoadSwfView();
+				_rightSwfFile = new LoadSwfView();
+				_rightSwfFile.x = _leftSwfFile.x + _leftSwfFile.width + 100;
+				_rightSwfFile.y = _leftSwfFile.y;
+				_rightSwfFile.type = 1;
+				addChild(_leftSwfFile);
+				addChild(_rightSwfFile);
+			}
+			
+			private function showAll():void
+			{
+				_leftSwfFile.showAllClass();
+				_rightSwfFile.showAllClass();
+			}
+			
+			private function showDifference():void
+			{
+				_leftSwfFile.showDiff(_rightSwfFile.classNameArray);
+				_rightSwfFile.showDiff(_leftSwfFile.classNameArray);
+			}
+		]]>
+	</mx:Script>
+	<mx:VRule x="522" y="40" height="540" themeColor="#8F3E3E" width="18" strokeColor="#030303"/>
+	<mx:Button x="459" y="38" label="显示全部" click="showAll()"/>
+	<mx:Button x="533" y="38" label="显示差异" click="showDifference()"/>
+</mx:WindowedApplication>
